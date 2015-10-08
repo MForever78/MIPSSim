@@ -1,5 +1,7 @@
 package mipssim;
 
+import java.util.Arrays;
+
 /**
  * Instruction Constraints
  *
@@ -11,7 +13,7 @@ enum INST {
     /* R-type */
     ADD, SUB, AND, OR, XOR, NOR, SLT, SLL, SRL, SRA, SLLV, SRLV, SRAV, JR,
     /* I-type */
-    ADDI, ADDIU, ANDI, ORI, XORI, LUI, LW, SW, BEQ, BNE, SLTI,
+    ADDI, ADDIU, ANDI, ORI, XORI, LUI, LW, SW, LH, SH, LB, SB, BEQ, BNE, SLTI,
     /* J-type */
     J, JAL,
     /* ERROR */
@@ -22,7 +24,6 @@ public class Instructions {
     static INST getInstName(int inst) {
         int opcode = inst >> 26;
         int funct = inst << 26 >>> 26;
-        System.out.println("funct: " + funct);
         switch (opcode) {
             case 0b000000:
                 switch (funct) {
@@ -86,5 +87,58 @@ public class Instructions {
             default:
                 return INST.ERROR;
         }
+    }
+
+    static String disassemble(int inst) {
+         String[] regNameMap = {
+            "$zero", "$at", "$v0", "$v1", "$a0", "$a1", "$a2", "$a3",
+            "$t0", "$t1", "$t2", "$t3", "$t4", "$t5", "$t6", "$t7",
+            "$s0", "$s1", "$s2", "$s3", "$s4", "$s5", "$s6", "$s7",
+            "$t8", "$t9",
+            "$k0", "$k1",
+            "$gp", "$sp", "$fp", "$ra"
+        };
+        INST[] RType = {
+            INST.ADD, INST.SUB, INST.AND, INST.OR, INST.XOR, INST.NOR,
+            INST.SLLV, INST.SRLV, INST.SRAV
+        };
+        INST[] IType = {
+            INST.ADDI, INST.ADDIU, INST.ANDI, INST.ORI, INST.XORI,
+            INST.BEQ, INST.BNE, INST.SLTI
+        };
+        INST[] SLType = {
+            INST.SW, INST.SH, INST.SB, INST.LW, INST.LH, INST.LB
+        };
+        INST[] LogicType = {
+            INST.SLL, INST.SRL, INST.SRA
+        };
+        String rs = regNameMap[inst << 6 >>> 27];
+        String rt = regNameMap[inst << 11 >>> 27];
+        String rd = regNameMap[inst << 16 >>> 27];
+        int shamt = inst << 21 >>> 27;
+        int immediate = inst << 16 >>> 16;
+        int signExtImm = (immediate & 0x00008000) == 0 ? immediate : immediate | 0xffff0000;
+        int address = inst << 6 >>> 6;
+        INST instName = Instructions.getInstName(inst);
+
+        if (Arrays.asList(RType).contains(instName)) {
+            return String.format("%s\t%s, %s, %s", instName, rd, rs, rt);
+        } else if (Arrays.asList(IType).contains(instName)) {
+            return String.format("%s\t%s, %s, %d", instName, rt, rs, signExtImm);
+        } else if (Arrays.asList(SLType).contains(instName)) {
+            return String.format("%s\t%s, %d(%s)", instName, rt, signExtImm, rs);
+        } else if (Arrays.asList(LogicType).contains(instName)) {
+            return String.format("%s\t%s, %s, %d", instName, rd, rt, shamt);
+        }
+
+        switch (instName) {
+            // Non-standard instructions
+            case JR:    return String.format("JR\t%s", rs);
+            case LUI:   return String.format("LUI\t%s, 0x%x", rt, immediate);
+            case J:     return String.format("J\t\t0x%x", address);
+            case JAL:   return String.format("JAL\t0x%x", address);
+        }
+
+        return "ERROR";
     }
 }

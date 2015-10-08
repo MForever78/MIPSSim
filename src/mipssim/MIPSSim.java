@@ -16,19 +16,12 @@ public class MIPSSim {
     public static int IR;
     public static int rs, rt, rd, immediate, address, shamt, signExtImm, sign;
     public static INST instName;
+    public static String instruction;
     public static final int ra = 31;
 
     public static void printDebug() {
         System.out.printf("PC: 0x%8X\n", PC);
-        System.out.printf("IR: 0x%8X\n", IR);
-        System.out.println("instruction: " + instName);
-        System.out.println("rs: " + rs);
-        System.out.println("rt: " + rt);
-        System.out.println("rd: " + rd);
-        System.out.println("shamt: " + shamt);
-        System.out.println("immediate: " + immediate);
-        System.out.printf("address: 0x%8X\n", address);
-        System.out.println();
+        System.out.println(instruction);
     }
 
     public static void main(String[] args) {
@@ -58,6 +51,7 @@ public class MIPSSim {
             signExtImm = (immediate & 0x00008000) == 0 ? immediate : immediate | 0xffff0000;
             address = IR << 6 >>> 6;
             instName = Instructions.getInstName(IR);
+            instruction = Instructions.disassemble(IR);
             switch(instName) {
                 case ADD:   Regs[rs] = Regs[rt] + Regs[rd];             break;
                 case SUB:   Regs[rs] = Regs[rt] - Regs[rd];             break;
